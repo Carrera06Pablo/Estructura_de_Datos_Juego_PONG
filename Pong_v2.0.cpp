@@ -15,9 +15,9 @@ struct Paddle {
     float speed;
 };
 
-Ball ball = { 425, 250, 2, 2, 20 };
-Paddle paddleLeft = { 25, 200, 20, 100, 4 };
-Paddle paddleRight = { 805, 200, 20, 100, 4 };
+Ball ball = { 425, 250, 1.5f, 1.5f, 20 };
+Paddle paddleLeft = { 25, 200, 20, 100, 2 };
+Paddle paddleRight = { 805, 200, 20, 100, 2 };
 
 int scoreLeft = 0;
 int scoreRight = 0;
@@ -80,15 +80,15 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
             scoreRight++;
             ball.x = 425;
             ball.y = 250;
-            ball.velX = 2;
-            ball.velY = 2;
+            ball.velX = 1.5f;
+            ball.velY = 1.5f;
         }
         if (ball.x > 840) {
             scoreLeft++;
             ball.x = 425;
             ball.y = 250;
-            ball.velX = -2;
-            ball.velY = 2;
+            ball.velX = -1.5f;
+            ball.velY = 1.5f;
         }
 
         // Movimiento de las paletas
@@ -121,6 +121,9 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
         case WM_PAINT: {
             PAINTSTRUCT ps;
             HDC hdc = BeginPaint(hwnd, &ps);
+
+            // Fondo blanco
+            FillRect(hdc, &ps.rcPaint, (HBRUSH)(COLOR_WINDOW+1));
 
             // Dibuja la bola
             Ellipse(hdc, (int)ball.x, (int)ball.y, (int)ball.x + ball.size, (int)ball.y + ball.size);
