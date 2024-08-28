@@ -113,28 +113,58 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 }
 
 LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
+    static HDC hdcBackBuffer = nullptr;
+    static HBITMAP hbmBackBuffer = nullptr;
+    static HBITMAP hbmOldBuffer = nullptr;
+    static int width, height;
+
     switch (uMsg) {
-        case WM_DESTROY:
+        case WM_SIZE: {
+            if (hdcBackBuffer) {
+                SelectObject(hdcBackBuffer, hbmOldBuffer);
+                DeleteObject(hbmBackBuffer);
+                DeleteDC(hdcBackBuffer);
+            }
+
+            width = LOWORD(lParam);
+            height = HIWORD(lParam);
+
+            HDC hdc = GetDC(hwnd);
+            hdcBackBuffer = CreateCompatibleDC(hdc);
+            hbmBackBuffer = CreateCompatibleBitmap(hdc, width, height);
+            hbmOldBuffer = (HBITMAP)SelectObject(hdcBackBuffer, hbmBackBuffer);
+            ReleaseDC(hwnd, hdc);
+        } return 0;
+
+        case WM_DESTROY: {
+            if (hdcBackBuffer) {
+                SelectObject(hdcBackBuffer, hbmOldBuffer);
+                DeleteObject(hbmBackBuffer);
+                DeleteDC(hdcBackBuffer);
+            }
             PostQuitMessage(0);
-            return 0;
+        } return 0;
 
         case WM_PAINT: {
             PAINTSTRUCT ps;
             HDC hdc = BeginPaint(hwnd, &ps);
 
             // Fondo blanco
-            FillRect(hdc, &ps.rcPaint, (HBRUSH)(COLOR_WINDOW+1));
+            FillRect(hdcBackBuffer, &ps.rcPaint, (HBRUSH)(COLOR_WINDOW+1));
 
             // Dibuja la bola
-            Ellipse(hdc, (int)ball.x, (int)ball.y, (int)ball.x + ball.size, (int)ball.y + ball.size);
+            Ellipse(hdcBackBuffer, (int)ball.x, (int)ball.y, (int)ball.x + ball.size, (int)ball.y + ball.size);
 
             // Dibuja las paletas
-            Rectangle(hdc, (int)paddleLeft.x, (int)paddleLeft.y, (int)paddleLeft.x + (int)paddleLeft.width, (int)paddleLeft.y + (int)paddleLeft.height);
-            Rectangle(hdc, (int)paddleRight.x, (int)paddleRight.y, (int)paddleRight.x + (int)paddleRight.width, (int)paddleRight.y + (int)paddleRight.height);
+            Rectangle(hdcBackBuffer, (int)paddleLeft.x, (int)paddleLeft.y, (int)paddleLeft.x + (int)paddleLeft.width, (int)paddleLeft.y + (int)paddleLeft.height);
+            Rectangle(hdcBackBuffer, (int)paddleRight.x, (int)paddleRight.y, (int)paddleRight.x + (int)paddleRight.width, (int)paddleRight.y + (int)paddleRight.height);
 
             // Dibuja el marcador
             std::string scoreText = std::to_string(scoreLeft) + " - " + std::to_string(scoreRight);
-            TextOut(hdc, 400, 10, scoreText.c_str(), scoreText.length());
+            TextOut(hdcBackBuffer, 400, 10, scoreText.c_str(), scoreText.length());
+
+            // Copiar el buffer a la pantalla
+            BitBlt(hdc, 0, 0, width, height, hdcBackBuffer, 0, 0, SRCCOPY);
 
             EndPaint(hwnd, &ps);
         } return 0;
