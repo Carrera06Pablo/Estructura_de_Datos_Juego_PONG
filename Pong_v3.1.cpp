@@ -150,16 +150,26 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
             HDC hdc = BeginPaint(hwnd, &ps);
 
             // Fondo blanco
-            FillRect(hdcBackBuffer, &ps.rcPaint, (HBRUSH)(COLOR_WINDOW+1));
+            HBRUSH hBrushBackground = CreateSolidBrush(RGB(0, 0, 0)); // Color de fondo negro
+            FillRect(hdcBackBuffer, &ps.rcPaint, hBrushBackground);
+            DeleteObject(hBrushBackground);
 
             // Dibuja la bola
+            HBRUSH hBrushBall = CreateSolidBrush(RGB(255, 255, 255)); // Color de la bola blanco
+            SelectObject(hdcBackBuffer, hBrushBall);
             Ellipse(hdcBackBuffer, (int)ball.x, (int)ball.y, (int)ball.x + ball.size, (int)ball.y + ball.size);
+            DeleteObject(hBrushBall);
 
             // Dibuja las paletas
+            HBRUSH hBrushPaddle = CreateSolidBrush(RGB(255, 0, 0)); // Color de las paletas rojo
+            SelectObject(hdcBackBuffer, hBrushPaddle);
             Rectangle(hdcBackBuffer, (int)paddleLeft.x, (int)paddleLeft.y, (int)paddleLeft.x + (int)paddleLeft.width, (int)paddleLeft.y + (int)paddleLeft.height);
             Rectangle(hdcBackBuffer, (int)paddleRight.x, (int)paddleRight.y, (int)paddleRight.x + (int)paddleRight.width, (int)paddleRight.y + (int)paddleRight.height);
+            DeleteObject(hBrushPaddle);
 
             // Dibuja el marcador
+            SetBkMode(hdcBackBuffer, TRANSPARENT);
+            SetTextColor(hdcBackBuffer, RGB(255, 255, 255)); // Color del texto blanco
             std::string scoreText = std::to_string(scoreLeft) + " - " + std::to_string(scoreRight);
             TextOut(hdcBackBuffer, 400, 10, scoreText.c_str(), scoreText.length());
 
