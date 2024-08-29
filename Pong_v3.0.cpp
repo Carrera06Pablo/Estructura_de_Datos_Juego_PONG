@@ -15,9 +15,9 @@ struct Paddle {
     float speed;
 };
 
-Ball ball = { 425, 250, 0.75f, 0.75f, 20 };
-Paddle paddleLeft = { 25, 200, 20, 100, 2 };
-Paddle paddleRight = { 805, 200, 20, 100, 2 };
+Ball ball = { 425, 250, 0.5f, 0.5f, 20 };
+Paddle paddleLeft = { 25, 200, 20, 100, 1 };
+Paddle paddleRight = { 805, 200, 20, 100, 1 };
 
 int scoreLeft = 0;
 int scoreRight = 0;
@@ -66,13 +66,13 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
             ball.velX *= -1;
             // Ajustar la dirección de la bola según la posición de la colisión en la paleta
             float hitPos = (ball.y - paddleLeft.y) / paddleLeft.height - 0.5f;
-            ball.velY = hitPos * 2;
+            ball.velY = hitPos * 1.5f;
         }
         if (ball.x > paddleRight.x - ball.size && ball.y > paddleRight.y && ball.y < paddleRight.y + paddleRight.height) {
             ball.velX *= -1;
             // Ajustar la dirección de la bola según la posición de la colisión en la paleta
             float hitPos = (ball.y - paddleRight.y) / paddleRight.height - 0.5f;
-            ball.velY = hitPos * 2;
+            ball.velY = hitPos * 1.5f;
         }
 
         // Puntos
@@ -80,15 +80,15 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
             scoreRight++;
             ball.x = 425;
             ball.y = 250;
-            ball.velX = 0.75f;
-            ball.velY = 0.75f;
+            ball.velX = 0.5f;
+            ball.velY = 0.5f;
         }
         if (ball.x > 840) {
             scoreLeft++;
             ball.x = 425;
             ball.y = 250;
-            ball.velX = -0.75f;
-            ball.velY = 0.75f;
+            ball.velX = -0.5f;
+            ball.velY = 0.5f;
         }
 
         // Movimiento de las paletas
