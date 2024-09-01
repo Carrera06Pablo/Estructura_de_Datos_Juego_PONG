@@ -1,5 +1,7 @@
 #include <SDL2/SDL.h>
+#include <SDL2/SDL_ttf.h>
 #include <iostream>
+#include <string>
 
 // Constantes del juego
 const int SCREEN_WIDTH = 800;
@@ -19,7 +21,11 @@ int ballY = (SCREEN_HEIGHT - BALL_SIZE) / 2;
 int ballSpeedX = 5;
 int ballSpeedY = 5;
 
-bool init(SDL_Window** window, SDL_Renderer** renderer) {
+// Variables de puntaje
+int score1 = 0;
+int score2 = 0;
+
+bool init(SDL_Window** window, SDL_Renderer** renderer, TTF_Font** font) {
     if (SDL_Init(SDL_INIT_VIDEO) < 0) {
         std::cout << "SDL no se pudo inicializar. SDL_Error: " << SDL_GetError() << std::endl;
         return false;
@@ -37,12 +43,25 @@ bool init(SDL_Window** window, SDL_Renderer** renderer) {
         return false;
     }
 
+    if (TTF_Init() == -1) {
+        std::cout << "SDL_ttf no se pudo inicializar. TTF_Error: " << TTF_GetError() << std::endl;
+        return false;
+    }
+
+    *font = TTF_OpenFont("arial.ttf", 28);
+    if (*font == NULL) {
+        std::cout << "No se pudo cargar la fuente. TTF_Error: " << TTF_GetError() << std::endl;
+        return false;
+    }
+
     return true;
 }
 
-void close(SDL_Window* window, SDL_Renderer* renderer) {
+void close(SDL_Window* window, SDL_Renderer* renderer, TTF_Font* font) {
+    TTF_CloseFont(font);
     SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(window);
+    TTF_Quit();
     SDL_Quit();
 }
 
@@ -86,15 +105,37 @@ void updateBall() {
         ballSpeedX = -ballSpeedX;
     }
 
-    // Reiniciar la pelota si sale de los límites
-    if (ballX < 0 || ballX > SCREEN_WIDTH) {
+    // Reiniciar la pelota y actualizar el marcador si sale de los límites
+    if (ballX < 0) {
+        score2++;
+        ballX = (SCREEN_WIDTH - BALL_SIZE) / 2;
+        ballY = (SCREEN_HEIGHT - BALL_SIZE) / 2;
+        ballSpeedX = -ballSpeedX;
+    } else if (ballX > SCREEN_WIDTH) {
+        score1++;
         ballX = (SCREEN_WIDTH - BALL_SIZE) / 2;
         ballY = (SCREEN_HEIGHT - BALL_SIZE) / 2;
         ballSpeedX = -ballSpeedX;
     }
 }
 
-void render(SDL_Renderer* renderer) {
+void renderText(SDL_Renderer* renderer, TTF_Font* font, std::string text, int x, int y) {
+    SDL_Color textColor = { 255, 255, 255, 255 };
+    SDL_Surface* textSurface = TTF_RenderText_Solid(font, text.c_str(), textColor);
+    SDL_Texture* textTexture = SDL_CreateTextureFromSurface(renderer, textSurface);
+
+    int textWidth = 0;
+    int textHeight = 0;
+    SDL_QueryTexture(textTexture, NULL, NULL, &textWidth, &textHeight);
+    SDL_Rect renderQuad = { x, y, textWidth, textHeight };
+
+    SDL_RenderCopy(renderer, textTexture, NULL, &renderQuad);
+
+    SDL_DestroyTexture(textTexture);
+    SDL_FreeSurface(textSurface);
+}
+
+void render(SDL_Renderer* renderer, TTF_Font* font) {
     SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
     SDL_RenderClear(renderer);
 
@@ -110,14 +151,19 @@ void render(SDL_Renderer* renderer) {
     SDL_Rect ball = { ballX, ballY, BALL_SIZE, BALL_SIZE };
     SDL_RenderFillRect(renderer, &ball);
 
+    // Renderizar marcador
+    renderText(renderer, font, std::to_string(score1), SCREEN_WIDTH / 4, 20);
+    renderText(renderer, font, std::to_string(score2), 3 * SCREEN_WIDTH / 4, 20);
+
     SDL_RenderPresent(renderer);
 }
 
 int main(int argc, char* args[]) {
     SDL_Window* window = NULL;
     SDL_Renderer* renderer = NULL;
+    TTF_Font* font = NULL;
 
-    if (!init(&window, &renderer)) {
+    if (!init(&window, &renderer, &font)) {
         std::cout << "Fallo en la inicialización." << std::endl;
         return -1;
     }
@@ -128,11 +174,11 @@ int main(int argc, char* args[]) {
     while (!quit) {
         handleInput(quit, keystates);
         updateBall();
-        render(renderer);
+        render(renderer, font);
 
         SDL_Delay(16);  // Aproximadamente 60 FPS
     }
 
-    close(window, renderer);
+    close(window, renderer, font);
     return 0;
 }
