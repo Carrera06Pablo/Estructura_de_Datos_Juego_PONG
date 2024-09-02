@@ -10,7 +10,7 @@ const int SCREEN_HEIGHT = 480;
 // Constantes de la pelota
 const int BALL_SIZE = 15;
 int ballX, ballY;
-int ballSpeedX = 4, ballSpeedY = 4;
+int ballSpeedX = 6, ballSpeedY = 6;
 
 // Constantes de las paletas
 const int PADDLE_WIDTH = 15;
@@ -26,6 +26,9 @@ SDL_AudioSpec wavSpecPaddle, wavSpecScore, wavSpecImpact;
 Uint32 wavLengthPaddle, wavLengthScore, wavLengthImpact;
 Uint8 *wavBufferPaddle, *wavBufferScore, *wavBufferImpact;
 SDL_AudioDeviceID deviceIdPaddle, deviceIdScore, deviceIdImpact;
+
+// Modo de juego
+bool playAgainstAI = false;
 
 // Inicialización de SDL, la ventana, el renderizador y las fuentes
 bool init(SDL_Window** window, SDL_Renderer** renderer, TTF_Font** font) {
@@ -152,6 +155,15 @@ void updateBall() {
     }
 }
 
+// Actualizar la posición de la paleta controlada por la computadora
+void updateAIPaddle() {
+    if (ballY < paddle2Y + PADDLE_HEIGHT / 2) {
+        paddle2Y -= paddleSpeed;
+    } else if (ballY > paddle2Y + PADDLE_HEIGHT / 2) {
+        paddle2Y += paddleSpeed;
+    }
+}
+
 // Renderizar el juego
 void render(SDL_Renderer* renderer, TTF_Font* font) {
     SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
@@ -177,6 +189,40 @@ void render(SDL_Renderer* renderer, TTF_Font* font) {
     SDL_RenderPresent(renderer);
 }
 
+// Mostrar el menú principal
+bool showMenu(SDL_Renderer* renderer, TTF_Font* font) {
+    bool selected = false;
+    SDL_Event e;
+
+    while (!selected) {
+        SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
+        SDL_RenderClear(renderer);
+
+        renderText(renderer, font, "Pong", SCREEN_WIDTH / 2 - 50, SCREEN_HEIGHT / 4);
+        renderText(renderer, font, "1. Jugar contra otro jugador", SCREEN_WIDTH / 4, SCREEN_HEIGHT / 2);
+        renderText(renderer, font, "2. Jugar contra la computadora", SCREEN_WIDTH / 4, SCREEN_HEIGHT / 2 + 40);
+
+        SDL_RenderPresent(renderer);
+
+        while (SDL_PollEvent(&e) != 0) {
+            if (e.type == SDL_QUIT) {
+                return false;
+            }
+            if (e.type == SDL_KEYDOWN) {
+                if (e.key.keysym.sym == SDLK_1) {
+                    playAgainstAI = false;
+                    selected = true;
+                }
+                if (e.key.keysym.sym == SDLK_2) {
+                    playAgainstAI = true;
+                    selected = true;
+                }
+            }
+        }
+    }
+    return true;
+}
+
 int main(int argc, char* args[]) {
     SDL_Window* window = NULL;
     SDL_Renderer* renderer = NULL;
@@ -187,12 +233,15 @@ int main(int argc, char* args[]) {
         return -1;
     }
 
-    // Posiciones iniciales
-    ballX = (SCREEN_WIDTH - BALL_SIZE) / 2;
-    ballY = (SCREEN_HEIGHT - BALL_SIZE) / 2;
+    if (!showMenu(renderer, font)) {
+        close(window, renderer, font);
+        return 0;
+    }
 
     paddle1Y = (SCREEN_HEIGHT - PADDLE_HEIGHT) / 2;
     paddle2Y = (SCREEN_HEIGHT - PADDLE_HEIGHT) / 2;
+    ballX = (SCREEN_WIDTH - BALL_SIZE) / 2;
+    ballY = (SCREEN_HEIGHT - BALL_SIZE) / 2;
 
     bool quit = false;
     SDL_Event e;
@@ -213,21 +262,24 @@ int main(int argc, char* args[]) {
             paddle1Y += paddleSpeed;
             if (paddle1Y > SCREEN_HEIGHT - PADDLE_HEIGHT) paddle1Y = SCREEN_HEIGHT - PADDLE_HEIGHT;
         }
-        if (currentKeyStates[SDL_SCANCODE_UP]) {
-            paddle2Y -= paddleSpeed;
-            if (paddle2Y < 0) paddle2Y = 0;
-        }
-        if (currentKeyStates[SDL_SCANCODE_DOWN]) {
-            paddle2Y += paddleSpeed;
-            if (paddle2Y > SCREEN_HEIGHT - PADDLE_HEIGHT) paddle2Y = SCREEN_HEIGHT - PADDLE_HEIGHT;
+        if (!playAgainstAI) {
+            if (currentKeyStates[SDL_SCANCODE_UP]) {
+                paddle2Y -= paddleSpeed;
+                if (paddle2Y < 0) paddle2Y = 0;
+            }
+            if (currentKeyStates[SDL_SCANCODE_DOWN]) {
+                paddle2Y += paddleSpeed;
+                if (paddle2Y > SCREEN_HEIGHT - PADDLE_HEIGHT) paddle2Y = SCREEN_HEIGHT - PADDLE_HEIGHT;
+            }
+        } else {
+            updateAIPaddle();
         }
 
         updateBall();
         render(renderer, font);
-        SDL_Delay(16);
+        SDL_Delay(10);
     }
 
     close(window, renderer, font);
-
     return 0;
 }
