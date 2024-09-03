@@ -9,7 +9,6 @@ const int SCREEN_HEIGHT = 480;
 
 // Constantes de la pelota
 const int BALL_SIZE = 15;
-
 int ballX, ballY;
 int ballSpeedX = 6, ballSpeedY = 6;
 
@@ -20,14 +19,10 @@ int paddle1Y, paddle2Y;
 int paddleSpeed = 5;
 
 // Puntuación
-
-
 int score1 = 0, score2 = 0;
-const int WINNING_SCORE = 10;
+const int WINNING_SCORE = 7;
 
 // Variables de audio
-
-
 SDL_AudioSpec wavSpecPaddle, wavSpecScore, wavSpecImpact;
 Uint32 wavLengthPaddle, wavLengthScore, wavLengthImpact;
 Uint8 *wavBufferPaddle, *wavBufferScore, *wavBufferImpact;
@@ -50,7 +45,6 @@ bool init(SDL_Window** window, SDL_Renderer** renderer, TTF_Font** font) {
     }
 
     *renderer = SDL_CreateRenderer(*window, -1, SDL_RENDERER_ACCELERATED);
-
     if (*renderer == NULL) {
         std::cout << "El renderizador no pudo ser creado. SDL_Error: " << SDL_GetError() << std::endl;
         return false;
@@ -92,8 +86,6 @@ bool init(SDL_Window** window, SDL_Renderer** renderer, TTF_Font** font) {
 }
 
 // Liberar los recursos
-
-
 void close(SDL_Window* window, SDL_Renderer* renderer, TTF_Font* font) {
     // Liberar sonidos
     SDL_CloseAudioDevice(deviceIdPaddle);
@@ -114,7 +106,6 @@ void close(SDL_Window* window, SDL_Renderer* renderer, TTF_Font* font) {
 }
 
 // Renderizar texto en pantalla
-
 void renderText(SDL_Renderer* renderer, TTF_Font* font, std::string text, int x, int y) {
     SDL_Color color = {255, 255, 255};
     SDL_Surface* surface = TTF_RenderText_Solid(font, text.c_str(), color);
@@ -128,13 +119,11 @@ void renderText(SDL_Renderer* renderer, TTF_Font* font, std::string text, int x,
 }
 
 // Actualizar la posición de la pelota
-
 void updateBall() {
     ballX += ballSpeedX;
     ballY += ballSpeedY;
 
     // Colisiones con los bordes superior e inferior
-
     if (ballY <= 0 || ballY >= SCREEN_HEIGHT - BALL_SIZE) {
         ballSpeedY = -ballSpeedY;
         SDL_QueueAudio(deviceIdImpact, wavBufferImpact, wavLengthImpact);
@@ -147,12 +136,9 @@ void updateBall() {
         ballSpeedX = -ballSpeedX;
         SDL_QueueAudio(deviceIdPaddle, wavBufferPaddle, wavLengthPaddle);
         SDL_PauseAudioDevice(deviceIdPaddle, 0);  // Reproducir sonido al golpear la paleta
-
-
     }
 
     // Reiniciar la pelota y actualizar el marcador si sale de los límites
-
     if (ballX < 0) {
         score2++;
         ballX = (SCREEN_WIDTH - BALL_SIZE) / 2;
@@ -170,9 +156,7 @@ void updateBall() {
     }
 }
 
-// Comprobar si alguien ha ganadosadsa
-
-
+// Comprobar si alguien ha ganado
 bool checkWinCondition(SDL_Renderer* renderer, TTF_Font* font) {
     if (score1 == WINNING_SCORE || score2 == WINNING_SCORE) {
         std::string winnerText = (score1 == WINNING_SCORE) ? "Jugador 1 Gana!" : "Jugador 2 Gana!";
@@ -198,10 +182,7 @@ void render(SDL_Renderer* renderer, TTF_Font* font) {
     SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
     SDL_RenderClear(renderer);
 
-
-
     SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
-
 
     // Renderizar la pelota
     SDL_Rect ballRect = {ballX, ballY, BALL_SIZE, BALL_SIZE};
@@ -231,30 +212,21 @@ void showInstructions(SDL_Renderer* renderer, TTF_Font* font) {
         SDL_RenderClear(renderer);
 
         renderText(renderer, font, "Instrucciones:", 50, 50);
-
         renderText(renderer, font, "Lógica del Juego:", 50, 100);
-
         renderText(renderer, font, "Contra otro Jugador: Ambos jugadores", 50, 140);
-
         renderText(renderer, font, "controlan las paletas usando W/S para el", 50, 180);
-
         renderText(renderer, font, "jugador 1 y UP/DOWN para el jugador 2.", 50, 220);
-
         renderText(renderer, font, "Contra la Computadora: El jugador 1", 50, 260);
-
         renderText(renderer, font, "controla la paleta izquierda, mientras que", 50, 300);
-
         renderText(renderer, font, "la paleta derecha es controlada", 50, 340);
-
         renderText(renderer, font, "automaticamente.", 50, 380);
-        renderText(renderer, font, "Presione cualquier tecla para volver al menu.", 50, 420);
+        renderText(renderer, font, "Se gana al llegar a 7 puntos.", 50, 420);
+        renderText(renderer, font, "Presione cualquier tecla para volver al menu.", 50, 460);
 
         SDL_RenderPresent(renderer);
 
         while (SDL_PollEvent(&e) != 0) {
-
             if (e.type == SDL_QUIT) {
-
                 waiting = false;
                 break;
             }
@@ -383,8 +355,6 @@ int main(int argc, char* args[]) {
         }
     }
 
-
     close(window, renderer, font);
-
     return 0;
 }
