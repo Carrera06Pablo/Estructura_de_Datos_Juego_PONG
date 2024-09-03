@@ -189,18 +189,54 @@ void render(SDL_Renderer* renderer, TTF_Font* font) {
     SDL_RenderPresent(renderer);
 }
 
+// Mostrar las instrucciones
+void showInstructions(SDL_Renderer* renderer, TTF_Font* font) {
+    bool waiting = true;
+    SDL_Event e;
+
+    while (waiting) {
+        SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
+        SDL_RenderClear(renderer);
+
+        renderText(renderer, font, "Instrucciones:", 50, 50);
+        renderText(renderer, font, "Lógica del Juego:", 50, 100);
+        renderText(renderer, font, "Contra otro Jugador: Ambos jugadores", 50, 140);
+        renderText(renderer, font, "controlan las paletas usando W/S para el", 50, 180);
+        renderText(renderer, font, "jugador 1 y UP/DOWN para el jugador 2.", 50, 220);
+        renderText(renderer, font, "Contra la Computadora: El jugador 1", 50, 260);
+        renderText(renderer, font, "controla la paleta izquierda, mientras que", 50, 300);
+        renderText(renderer, font, "la paleta derecha es controlada", 50, 340);
+        renderText(renderer, font, "automaticamente.", 50, 380);
+        renderText(renderer, font, "Presione cualquier tecla para volver al menu.", 50, 420);
+
+        SDL_RenderPresent(renderer);
+
+        while (SDL_PollEvent(&e) != 0) {
+            if (e.type == SDL_QUIT) {
+                waiting = false;
+                break;
+            }
+            if (e.type == SDL_KEYDOWN) {
+                waiting = false;
+            }
+        }
+    }
+}
+
 // Mostrar el menú principal
 bool showMenu(SDL_Renderer* renderer, TTF_Font* font) {
-    bool selected = false;
     SDL_Event e;
+    bool selected = false;
 
     while (!selected) {
         SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
         SDL_RenderClear(renderer);
 
-        renderText(renderer, font, "Pong", SCREEN_WIDTH / 2 - 50, SCREEN_HEIGHT / 4);
-        renderText(renderer, font, "1. Jugar contra otro jugador", SCREEN_WIDTH / 4, SCREEN_HEIGHT / 2);
-        renderText(renderer, font, "2. Jugar contra la computadora", SCREEN_WIDTH / 4, SCREEN_HEIGHT / 2 + 40);
+        renderText(renderer, font, "Bienvenido a Pong", SCREEN_WIDTH / 4, SCREEN_HEIGHT / 6);
+        renderText(renderer, font, "1. Jugar contra otro jugador", SCREEN_WIDTH / 4, SCREEN_HEIGHT / 3);
+        renderText(renderer, font, "2. Jugar contra la computadora", SCREEN_WIDTH / 4, SCREEN_HEIGHT / 3 + 40);
+        renderText(renderer, font, "3. Instrucciones", SCREEN_WIDTH / 4, SCREEN_HEIGHT / 3 + 80);
+        renderText(renderer, font, "4. Salir", SCREEN_WIDTH / 4, SCREEN_HEIGHT / 3 + 120);
 
         SDL_RenderPresent(renderer);
 
@@ -212,10 +248,19 @@ bool showMenu(SDL_Renderer* renderer, TTF_Font* font) {
                 if (e.key.keysym.sym == SDLK_1) {
                     playAgainstAI = false;
                     selected = true;
-                }
-                if (e.key.keysym.sym == SDLK_2) {
+                } else if (e.key.keysym.sym == SDLK_2) {
                     playAgainstAI = true;
                     selected = true;
+                } else if (e.key.keysym.sym == SDLK_3) {
+                    showInstructions(renderer, font);
+                } else if (e.key.keysym.sym == SDLK_4) {
+                    return false;
+                } else {
+                    SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
+                    SDL_RenderClear(renderer);
+                    renderText(renderer, font, "Opción incorrecta, ingrese de nuevo.", SCREEN_WIDTH / 4, SCREEN_HEIGHT / 2);
+                    SDL_RenderPresent(renderer);
+                    SDL_Delay(1000);
                 }
             }
         }
