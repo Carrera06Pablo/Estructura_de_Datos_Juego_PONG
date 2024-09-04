@@ -36,7 +36,24 @@ int main(int argc, char* args[]) {
                 }
             }
 
+            // Verifica si han pasado los 3 segundos de congelamiento para descongelar
+            if (player1Frozen && SDL_GetTicks() - powerUpStartTime >= FREEZE_DURATION) {
+                player1Frozen = false;
+            }
+            if (player2Frozen && SDL_GetTicks() - powerUpStartTime >= FREEZE_DURATION) {
+                player2Frozen = false;
+            }
+
+            // Controla la aparición del power-up solo una vez
+            if (SDL_GetTicks() >= 6000 && powerUpCount < MAX_POWERUPS && !powerUpActive) {
+                powerUpX = rand() % (SCREEN_WIDTH - POWERUP_SIZE);
+                powerUpY = rand() % (SCREEN_HEIGHT - POWERUP_SIZE);
+                powerUpActive = true;
+                powerUpCount++; // Marca el power-up como usado
+            }
+
             const Uint8* currentKeyStates = SDL_GetKeyboardState(NULL);
+            if (!player1Frozen) {
             if (currentKeyStates[SDL_SCANCODE_W]) {
                 paddle1Y -= paddleSpeed;
                 if (paddle1Y < 0) paddle1Y = 0;
@@ -45,7 +62,9 @@ int main(int argc, char* args[]) {
                 paddle1Y += paddleSpeed;
                 if (paddle1Y > SCREEN_HEIGHT - PADDLE_HEIGHT) paddle1Y = SCREEN_HEIGHT - PADDLE_HEIGHT;
             }
+            }
             if (!playAgainstAI) {
+                    if (!player2Frozen) {
                 if (currentKeyStates[SDL_SCANCODE_UP]) {
                     paddle2Y -= paddleSpeed;
                     if (paddle2Y < 0) paddle2Y = 0;
@@ -54,6 +73,7 @@ int main(int argc, char* args[]) {
                     paddle2Y += paddleSpeed;
                     if (paddle2Y > SCREEN_HEIGHT - PADDLE_HEIGHT) paddle2Y = SCREEN_HEIGHT - PADDLE_HEIGHT;
                 }
+                    }
             } else {
                 updateAIPaddle();
             }
@@ -72,3 +92,5 @@ int main(int argc, char* args[]) {
     close(window, renderer, font);
     return 0;
 }
+
+

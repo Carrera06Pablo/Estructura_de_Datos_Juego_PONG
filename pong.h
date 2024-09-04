@@ -36,6 +36,19 @@ SDL_AudioDeviceID deviceIdPaddle, deviceIdScore, deviceIdImpact;
 // Modo de juego
 bool playAgainstAI = false;
 
+bool powerUpActive = false;
+bool powerUpUsed = false;
+bool player1Frozen = false;
+bool player2Frozen = false;
+int powerUpX, powerUpY;
+Uint32 powerUpStartTime = 0;
+const int POWERUP_SIZE = 20;
+const int FREEZE_DURATION = 3000; // Duración del congelamiento en milisegundos
+int powerUpCount = 0;  // Contador para los power-ups
+const int MAX_POWERUPS = 2;  // Número máximo de power-ups que aparecerán
+
+extern int lastPlayerHit = 0;
+
 // Inicializaci�n de SDL, la ventana, el renderizador y las fuentes
 bool init(SDL_Window** window, SDL_Renderer** renderer, TTF_Font** font) {
     if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO) < 0) {
@@ -100,6 +113,9 @@ void initGame() {
     ballSpeedX = 10;
     ballSpeedY = 10;
 
+    powerUpX = -POWERUP_SIZE;
+    powerUpY = -POWERUP_SIZE;
+
     // Restablecer las puntuaciones
     score1 = 0;
     score2 = 0;
@@ -150,12 +166,31 @@ void updateBall() {
     }
 
     // Colisiones con las paletas
-    if ((ballX <= PADDLE_WIDTH && ballY + BALL_SIZE >= paddle1Y && ballY <= paddle1Y + PADDLE_HEIGHT) ||
-        (ballX + BALL_SIZE >= SCREEN_WIDTH - PADDLE_WIDTH && ballY + BALL_SIZE >= paddle2Y && ballY <= paddle2Y + PADDLE_HEIGHT)) {
+    if ((ballX <= PADDLE_WIDTH && ballY + BALL_SIZE >= paddle1Y && ballY <= paddle1Y + PADDLE_HEIGHT)) {
         ballSpeedX = -ballSpeedX;
+        lastPlayerHit = 1; // La pelota fue golpeada por el jugador 1
         SDL_QueueAudio(deviceIdPaddle, wavBufferPaddle, wavLengthPaddle);
         SDL_PauseAudioDevice(deviceIdPaddle, 0);  // Reproducir sonido al golpear la paleta
+    }else if (ballX + BALL_SIZE >= SCREEN_WIDTH - PADDLE_WIDTH && ballY + BALL_SIZE >= paddle2Y && ballY <= paddle2Y + PADDLE_HEIGHT) {
+    ballSpeedX = -ballSpeedX;
+    lastPlayerHit = 2; // La pelota fue golpeada por el jugador 2 o IA
+    SDL_QueueAudio(deviceIdPaddle, wavBufferPaddle, wavLengthPaddle);
+    SDL_PauseAudioDevice(deviceIdPaddle, 0);
     }
+
+    // Colisión con el power-up
+    if (powerUpActive && ballX + BALL_SIZE >= powerUpX && ballX <= powerUpX + POWERUP_SIZE && ballY + BALL_SIZE >= powerUpY && ballY <= powerUpY + POWERUP_SIZE) {
+    if (lastPlayerHit == 1) {
+        player2Frozen = true; // Congela al jugador 2 o IA
+    } else if (lastPlayerHit == 2) {
+        player1Frozen = true; // Congela al jugador 1
+    }
+    powerUpActive = false;
+    powerUpStartTime = SDL_GetTicks();
+    powerUpX = -POWERUP_SIZE;
+    powerUpY = -POWERUP_SIZE;
+}
+
 
     // Reiniciar la pelota y actualizar el marcador si sale de los l�mites
     if (ballX < 0) {
@@ -172,6 +207,14 @@ void updateBall() {
         ballSpeedX = -ballSpeedX;
         SDL_QueueAudio(deviceIdScore, wavBufferScore, wavLengthScore);
         SDL_PauseAudioDevice(deviceIdScore, 0);  // Reproducir sonido al marcar un punto
+    }
+}
+
+void renderPowerUp(SDL_Renderer* renderer) {
+    if (powerUpActive) {
+        SDL_Rect powerUpRect = {powerUpX, powerUpY, POWERUP_SIZE, POWERUP_SIZE};
+        SDL_SetRenderDrawColor(renderer, 0, 255, 0, 255); // Verde
+        SDL_RenderFillRect(renderer, &powerUpRect);
     }
 }
 
@@ -194,6 +237,10 @@ bool checkWinCondition(SDL_Renderer* renderer, TTF_Font* font) {
 
 
 void updateAIPaddle() {
+    if (player2Frozen) {
+        // Si el jugador 2 está congelado, no hacer nada
+        return;
+    }
     // Genera un número aleatorio entre 0 y 99
     int randomFailChance = rand() % 100;
 
@@ -236,6 +283,9 @@ void render(SDL_Renderer* renderer, TTF_Font* font) {
     // Renderizar el marcador
     renderText(renderer, font, std::to_string(score1), SCREEN_WIDTH / 4, 20);
     renderText(renderer, font, std::to_string(score2), SCREEN_WIDTH * 3 / 4, 20);
+
+    // Dibujar power-up
+    renderPowerUp(renderer);
 
     SDL_RenderPresent(renderer);
 }
@@ -443,6 +493,13 @@ void resetGame() {
     SDL_ClearQueuedAudio(deviceIdPaddle);
     SDL_ClearQueuedAudio(deviceIdScore);
     SDL_ClearQueuedAudio(deviceIdImpact);
+
+    powerUpActive = false;
+    powerUpUsed = false;
+    player1Frozen = false;
+    player2Frozen = false;
+    powerUpX = -POWERUP_SIZE;
+    powerUpY = -POWERUP_SIZE;
 }
 
 
