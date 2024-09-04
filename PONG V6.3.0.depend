@@ -482,7 +482,7 @@
 	"begin_code.h"
 	"close_code.h"
 
-1725420613 source:c:\users\anatu\documents\proyecto\estructura_de_datos_juego_pong\main.cpp
+1725420613 source:c:\users\anatu\pictures\pong v5.1\pongv6.3.0\main.cpp
 	<SDL2/SDL.h>
 	<SDL2/SDL_ttf.h>
 	<SDL2/SDL_image.h>
@@ -490,7 +490,7 @@
 	<string>
 	"pong.h"
 
-1725421195 c:\users\anatu\documents\proyecto\estructura_de_datos_juego_pong\pong.h
+1725421195 c:\users\anatu\pictures\pong v5.1\pongv6.3.0\pong.h
 	<SDL2/SDL.h>
 	<SDL2/SDL_ttf.h>
 	<SDL2/SDL_image.h>
