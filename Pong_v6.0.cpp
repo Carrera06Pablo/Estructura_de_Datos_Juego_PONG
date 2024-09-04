@@ -7,18 +7,20 @@
 const int SCREEN_WIDTH = 640;
 const int SCREEN_HEIGHT = 480;
 
+
 // Constantes de la pelota
-const int BALL_SIZE = 15;
+const int BALL_SIZE = 12;
 int ballX, ballY;
-int ballSpeedX = 6, ballSpeedY = 6;
+int ballSpeedX = 10, ballSpeedY = 10;
+
 
 // Constantes de las paletas
 const int PADDLE_WIDTH = 15;
 const int PADDLE_HEIGHT = 100;
 int paddle1Y, paddle2Y;
-int paddleSpeed = 5;
+int paddleSpeed = 6;
 
-// Puntuación
+// Puntuaciï¿½n
 int score1 = 0, score2 = 0;
 const int WINNING_SCORE = 7;
 
@@ -31,7 +33,7 @@ SDL_AudioDeviceID deviceIdPaddle, deviceIdScore, deviceIdImpact;
 // Modo de juego
 bool playAgainstAI = false;
 
-// Inicialización de SDL, la ventana, el renderizador y las fuentes
+// Inicializaciï¿½n de SDL, la ventana, el renderizador y las fuentes
 bool init(SDL_Window** window, SDL_Renderer** renderer, TTF_Font** font) {
     if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO) < 0) {
         std::cout << "SDL no pudo inicializarse. SDL_Error: " << SDL_GetError() << std::endl;
@@ -55,7 +57,7 @@ bool init(SDL_Window** window, SDL_Renderer** renderer, TTF_Font** font) {
         return false;
     }
 
-    *font = TTF_OpenFont("arial.ttf", 28);
+    *font = TTF_OpenFont("comic.ttf", 20);  // Reducir el tamaï¿½o de la fuente
     if (*font == NULL) {
         std::cout << "No se pudo cargar la fuente. SDL_ttf Error: " << TTF_GetError() << std::endl;
         return false;
@@ -118,7 +120,7 @@ void renderText(SDL_Renderer* renderer, TTF_Font* font, std::string text, int x,
     SDL_DestroyTexture(texture);
 }
 
-// Actualizar la posición de la pelota
+// Actualizar la posiciï¿½n de la pelota
 void updateBall() {
     ballX += ballSpeedX;
     ballY += ballSpeedY;
@@ -138,18 +140,18 @@ void updateBall() {
         SDL_PauseAudioDevice(deviceIdPaddle, 0);  // Reproducir sonido al golpear la paleta
     }
 
-    // Reiniciar la pelota y actualizar el marcador si sale de los límites
+    // Reiniciar la pelota y actualizar el marcador si sale de los lï¿½mites
     if (ballX < 0) {
         score2++;
         ballX = (SCREEN_WIDTH - BALL_SIZE) / 2;
-        ballY = (SCREEN_HEIGHT - BALL_SIZE) / 2;
+        ballY = 1;
         ballSpeedX = -ballSpeedX;
         SDL_QueueAudio(deviceIdScore, wavBufferScore, wavLengthScore);
         SDL_PauseAudioDevice(deviceIdScore, 0);  // Reproducir sonido al marcar un punto
     } else if (ballX > SCREEN_WIDTH) {
         score1++;
         ballX = (SCREEN_WIDTH - BALL_SIZE) / 2;
-        ballY = (SCREEN_HEIGHT - BALL_SIZE) / 2;
+        ballY = 1;
         ballSpeedX = -ballSpeedX;
         SDL_QueueAudio(deviceIdScore, wavBufferScore, wavLengthScore);
         SDL_PauseAudioDevice(deviceIdScore, 0);  // Reproducir sonido al marcar un punto
@@ -162,13 +164,13 @@ bool checkWinCondition(SDL_Renderer* renderer, TTF_Font* font) {
         std::string winnerText = (score1 == WINNING_SCORE) ? "Jugador 1 Gana!" : "Jugador 2 Gana!";
         renderText(renderer, font, winnerText, SCREEN_WIDTH / 4, SCREEN_HEIGHT / 2);
         SDL_RenderPresent(renderer);
-        SDL_Delay(3000); // Esperar 3 segundos antes de volver al menú
+        SDL_Delay(3000); // Esperar 3 segundos antes de volver al menï¿½
         return true;
     }
     return false;
 }
 
-// Actualizar la posición de la paleta controlada por la computadora
+// Actualizar la posiciï¿½n de la paleta controlada por la computadora
 void updateAIPaddle() {
     if (ballY < paddle2Y + PADDLE_HEIGHT / 2) {
         paddle2Y -= paddleSpeed;
@@ -195,7 +197,7 @@ void render(SDL_Renderer* renderer, TTF_Font* font) {
     SDL_Rect paddle2Rect = {SCREEN_WIDTH - PADDLE_WIDTH, paddle2Y, PADDLE_WIDTH, PADDLE_HEIGHT};
     SDL_RenderFillRect(renderer, &paddle2Rect);
 
-    // Renderizar la puntuación
+    // Renderizar el marcador
     renderText(renderer, font, std::to_string(score1), SCREEN_WIDTH / 4, 20);
     renderText(renderer, font, std::to_string(score2), SCREEN_WIDTH * 3 / 4, 20);
 
@@ -212,16 +214,16 @@ void showInstructions(SDL_Renderer* renderer, TTF_Font* font) {
         SDL_RenderClear(renderer);
 
         renderText(renderer, font, "Instrucciones:", 50, 50);
-        renderText(renderer, font, "Lógica del Juego:", 50, 100);
-        renderText(renderer, font, "Contra otro Jugador: Ambos jugadores", 50, 140);
-        renderText(renderer, font, "controlan las paletas usando W/S para el", 50, 180);
-        renderText(renderer, font, "jugador 1 y UP/DOWN para el jugador 2.", 50, 220);
-        renderText(renderer, font, "Contra la Computadora: El jugador 1", 50, 260);
-        renderText(renderer, font, "controla la paleta izquierda, mientras que", 50, 300);
-        renderText(renderer, font, "la paleta derecha es controlada", 50, 340);
-        renderText(renderer, font, "automaticamente.", 50, 380);
-        renderText(renderer, font, "Se gana al llegar a 7 puntos.", 50, 420);
-        renderText(renderer, font, "Presione cualquier tecla para volver al menu.", 50, 460);
+        renderText(renderer, font, "Lï¿½gica del Juego:", 50, 80);
+        renderText(renderer, font, "Contra otro Jugador: Ambos jugadores", 50, 110);
+        renderText(renderer, font, "controlan las paletas usando W/S para el", 50, 140);
+        renderText(renderer, font, "jugador 1 y UP/DOWN para el jugador 2.", 50, 170);
+        renderText(renderer, font, "Contra la Computadora: El jugador 1", 50, 200);
+        renderText(renderer, font, "controla la paleta izquierda, mientras que", 50, 230);
+        renderText(renderer, font, "la paleta derecha es controlada", 50, 260);
+        renderText(renderer, font, "automaticamente.", 50, 290);
+        renderText(renderer, font, "Se gana al llegar a 7 puntos.", 50, 320);
+        renderText(renderer, font, "Presione cualquier tecla para volver al menu.", 50, 350);
 
         SDL_RenderPresent(renderer);
 
@@ -237,7 +239,7 @@ void showInstructions(SDL_Renderer* renderer, TTF_Font* font) {
     }
 }
 
-// Mostrar el menú principal
+// Mostrar el menï¿½ principal
 bool showMenu(SDL_Renderer* renderer, TTF_Font* font) {
     SDL_Event e;
     bool selected = false;
@@ -272,7 +274,7 @@ bool showMenu(SDL_Renderer* renderer, TTF_Font* font) {
                 } else {
                     SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
                     SDL_RenderClear(renderer);
-                    renderText(renderer, font, "Opción incorrecta, ingrese de nuevo.", SCREEN_WIDTH / 4, SCREEN_HEIGHT / 2);
+                    renderText(renderer, font, "Opcion incorrecta, ingrese de nuevo.", SCREEN_WIDTH / 4, SCREEN_HEIGHT / 2);
                     SDL_RenderPresent(renderer);
                     SDL_Delay(1000);
                 }
@@ -287,11 +289,24 @@ void resetGame() {
     paddle1Y = (SCREEN_HEIGHT - PADDLE_HEIGHT) / 2;
     paddle2Y = (SCREEN_HEIGHT - PADDLE_HEIGHT) / 2;
     ballX = (SCREEN_WIDTH - BALL_SIZE) / 2;
-    ballY = (SCREEN_HEIGHT - BALL_SIZE) / 2;
+    ballY = 0;
     ballSpeedX = 6;
     ballSpeedY = 6;
     score1 = 0;
     score2 = 0;
+}
+
+void showCountdown(SDL_Renderer* renderer, TTF_Font* font) {
+    const int countdownTime = 1000; // 1000 ms = 1 segundo
+    for (int i = 3; i > 0; --i) {
+        SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
+        SDL_RenderClear(renderer);
+
+        renderText(renderer, font, std::to_string(i) , SCREEN_WIDTH / 2 - 20, SCREEN_HEIGHT / 2 - 20);
+
+        SDL_RenderPresent(renderer);
+        SDL_Delay(countdownTime);
+    }
 }
 
 int main(int argc, char* args[]) {
@@ -300,7 +315,7 @@ int main(int argc, char* args[]) {
     TTF_Font* font = NULL;
 
     if (!init(&window, &renderer, &font)) {
-        std::cout << "Fallo en la inicialización." << std::endl;
+        std::cout << "Fallo en la inicializaciï¿½n." << std::endl;
         return -1;
     }
 
@@ -311,6 +326,8 @@ int main(int argc, char* args[]) {
         }
 
         resetGame();
+        showCountdown(renderer, font);
+
         bool gameRunning = true;
 
         while (gameRunning) {
