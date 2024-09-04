@@ -2,23 +2,26 @@
 #include <SDL2/SDL_ttf.h>
 #include <iostream>
 #include <string>
+#include <cstdlib>  // Necesario para rand()
+
 
 // Constantes de la pantalla
 const int SCREEN_WIDTH = 640;
 const int SCREEN_HEIGHT = 480;
-
+float velocidadPaletaJugador = 6.0f;
+float velocidadPaletaMaquina = 6.0f;
 
 // Constantes de la pelota
 const int BALL_SIZE = 12;
 int ballX, ballY;
-int ballSpeedX = 10, ballSpeedY = 10;
+int ballSpeedX = 6, ballSpeedY = 6;
 
 
 // Constantes de las paletas
 const int PADDLE_WIDTH = 15;
 const int PADDLE_HEIGHT = 100;
 int paddle1Y, paddle2Y;
-int paddleSpeed = 6;
+int paddleSpeed = 10;
 
 // Puntuaci�n
 int score1 = 0, score2 = 0;
@@ -86,7 +89,21 @@ bool init(SDL_Window** window, SDL_Renderer** renderer, TTF_Font** font) {
 
     return true;
 }
+void initGame() {
+    // Inicializar posiciones de la pelota y las paletas
+    ballX = (SCREEN_WIDTH - BALL_SIZE) / 2;
+    ballY = (SCREEN_HEIGHT - BALL_SIZE) / 2;
+    paddle1Y = (SCREEN_HEIGHT - PADDLE_HEIGHT) / 2;
+    paddle2Y = (SCREEN_HEIGHT - PADDLE_HEIGHT) / 2;
 
+    // Restablecer las velocidades de la pelota
+    ballSpeedX = 10;
+    ballSpeedY = 10;
+
+    // Restablecer las puntuaciones
+    score1 = 0;
+    score2 = 0;
+}
 // Liberar los recursos
 void close(SDL_Window* window, SDL_Renderer* renderer, TTF_Font* font) {
     // Liberar sonidos
@@ -161,21 +178,40 @@ void updateBall() {
 // Comprobar si alguien ha ganado
 bool checkWinCondition(SDL_Renderer* renderer, TTF_Font* font) {
     if (score1 == WINNING_SCORE || score2 == WINNING_SCORE) {
+        // Detener todos los sonidos en curso
+        SDL_PauseAudioDevice(deviceIdPaddle, 1);
+        SDL_PauseAudioDevice(deviceIdScore, 1);
+        SDL_PauseAudioDevice(deviceIdImpact, 1);
+
         std::string winnerText = (score1 == WINNING_SCORE) ? "Jugador 1 Gana!" : "Jugador 2 Gana!";
         renderText(renderer, font, winnerText, SCREEN_WIDTH / 4, SCREEN_HEIGHT / 2);
         SDL_RenderPresent(renderer);
-        SDL_Delay(3000); // Esperar 3 segundos antes de volver al men�
+        SDL_Delay(3000); // Esperar 3 segundos antes de volver al menú
         return true;
     }
     return false;
 }
 
-// Actualizar la posici�n de la paleta controlada por la computadora
+
 void updateAIPaddle() {
-    if (ballY < paddle2Y + PADDLE_HEIGHT / 2) {
-        paddle2Y -= paddleSpeed;
-    } else if (ballY > paddle2Y + PADDLE_HEIGHT / 2) {
-        paddle2Y += paddleSpeed;
+    // Genera un número aleatorio entre 0 y 99
+    int randomFailChance = rand() % 100;
+
+    // Introducir un fallo si el número aleatorio está dentro de un rango (por ejemplo, 10% de fallos)
+    if (randomFailChance < 10) {  // Ahora solo fallará el 10% de las veces
+        // Fallo: la paleta se mueve en la dirección incorrecta pero de forma más suave
+        if (ballY < paddle2Y + PADDLE_HEIGHT / 2) {
+            paddle2Y += paddleSpeed / 2;  // Movimiento incorrecto, pero más suave
+        } else if (ballY > paddle2Y + PADDLE_HEIGHT / 2) {
+            paddle2Y -= paddleSpeed / 2;  // Movimiento incorrecto, pero más suave
+        }
+    } else {
+        // Comportamiento normal
+        if (ballY < paddle2Y + PADDLE_HEIGHT / 2) {
+            paddle2Y -= paddleSpeed * 0.8;  // Movimiento más fluido (un poco más lento)
+        } else if (ballY > paddle2Y + PADDLE_HEIGHT / 2) {
+            paddle2Y += paddleSpeed * 0.8;  // Movimiento más fluido (un poco más lento)
+        }
     }
 }
 
@@ -214,7 +250,7 @@ void showInstructions(SDL_Renderer* renderer, TTF_Font* font) {
         SDL_RenderClear(renderer);
 
         renderText(renderer, font, "Instrucciones:", 50, 50);
-        renderText(renderer, font, "L�gica del Juego:", 50, 80);
+        renderText(renderer, font, "Logica del Juego:", 50, 80);
         renderText(renderer, font, "Contra otro Jugador: Ambos jugadores", 50, 110);
         renderText(renderer, font, "controlan las paletas usando W/S para el", 50, 140);
         renderText(renderer, font, "jugador 1 y UP/DOWN para el jugador 2.", 50, 170);
@@ -238,21 +274,40 @@ void showInstructions(SDL_Renderer* renderer, TTF_Font* font) {
         }
     }
 }
+// Declaración de funciones
+void renderTextWithColor(SDL_Renderer* renderer, TTF_Font* font, std::string text, int x, int y, SDL_Color color);
 
-// Mostrar el men� principal
-bool showMenu(SDL_Renderer* renderer, TTF_Font* font) {
+// Definir niveles de dificultad
+enum Dificultad { FACIL, MEDIO, DIFICIL };
+Dificultad dificultadSeleccionada = DIFICIL;
+bool showDifficultyMenu(SDL_Renderer* renderer, TTF_Font* font) {
     SDL_Event e;
     bool selected = false;
+
+    // Definir las áreas de las opciones del submenú de dificultad
+    SDL_Rect easyRect = {SCREEN_WIDTH / 4, SCREEN_HEIGHT / 3, 400, 30};
+    SDL_Rect mediumRect = {SCREEN_WIDTH / 4, SCREEN_HEIGHT / 3 + 40, 400, 30};
+    SDL_Rect hardRect = {SCREEN_WIDTH / 4, SCREEN_HEIGHT / 3 + 80, 400, 30};
 
     while (!selected) {
         SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
         SDL_RenderClear(renderer);
 
-        renderText(renderer, font, "Bienvenido a Pong", SCREEN_WIDTH / 4, SCREEN_HEIGHT / 6);
-        renderText(renderer, font, "1. Jugar contra otro jugador", SCREEN_WIDTH / 4, SCREEN_HEIGHT / 3);
-        renderText(renderer, font, "2. Jugar contra la computadora", SCREEN_WIDTH / 4, SCREEN_HEIGHT / 3 + 40);
-        renderText(renderer, font, "3. Instrucciones", SCREEN_WIDTH / 4, SCREEN_HEIGHT / 3 + 80);
-        renderText(renderer, font, "4. Salir", SCREEN_WIDTH / 4, SCREEN_HEIGHT / 3 + 120);
+        // Obtener la posición actual del mouse
+        int x, y;
+        SDL_GetMouseState(&x, &y);
+        SDL_Point mousePoint = {x, y};
+
+        // Comprobar si el mouse está sobre alguna opción y cambiar su color
+        SDL_Color easyColor = SDL_PointInRect(&mousePoint, &easyRect) ? SDL_Color{255, 0, 0} : SDL_Color{255, 255, 255};
+        SDL_Color mediumColor = SDL_PointInRect(&mousePoint, &mediumRect) ? SDL_Color{255, 0, 0} : SDL_Color{255, 255, 255};
+        SDL_Color hardColor = SDL_PointInRect(&mousePoint, &hardRect) ? SDL_Color{255, 0, 0} : SDL_Color{255, 255, 255};
+
+        // Renderizar las opciones con el color correspondiente
+        renderTextWithColor(renderer, font, "Selecciona la dificultad", SCREEN_WIDTH / 4, SCREEN_HEIGHT / 6, SDL_Color{255, 255, 0});
+        renderTextWithColor(renderer, font, "1. Facil", easyRect.x, easyRect.y, easyColor);
+        renderTextWithColor(renderer, font, "2. Medio", mediumRect.x, mediumRect.y, mediumColor);
+        renderTextWithColor(renderer, font, "3. Dificil", hardRect.x, hardRect.y, hardColor);
 
         SDL_RenderPresent(renderer);
 
@@ -260,29 +315,118 @@ bool showMenu(SDL_Renderer* renderer, TTF_Font* font) {
             if (e.type == SDL_QUIT) {
                 return false;
             }
-            if (e.type == SDL_KEYDOWN) {
-                if (e.key.keysym.sym == SDLK_1) {
-                    playAgainstAI = false;
+            if (e.type == SDL_MOUSEBUTTONDOWN) {
+                if (SDL_PointInRect(&mousePoint, &easyRect)) {
+                    dificultadSeleccionada = FACIL;
                     selected = true;
-                } else if (e.key.keysym.sym == SDLK_2) {
-                    playAgainstAI = true;
+                } else if (SDL_PointInRect(&mousePoint, &mediumRect)) {
+                    dificultadSeleccionada = MEDIO;
                     selected = true;
-                } else if (e.key.keysym.sym == SDLK_3) {
-                    showInstructions(renderer, font);
-                } else if (e.key.keysym.sym == SDLK_4) {
-                    return false;
-                } else {
-                    SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
-                    SDL_RenderClear(renderer);
-                    renderText(renderer, font, "Opcion incorrecta, ingrese de nuevo.", SCREEN_WIDTH / 4, SCREEN_HEIGHT / 2);
-                    SDL_RenderPresent(renderer);
-                    SDL_Delay(1000);
+                } else if (SDL_PointInRect(&mousePoint, &hardRect)) {
+                    dificultadSeleccionada = DIFICIL;
+                    selected = true;
                 }
             }
         }
     }
     return true;
 }
+
+
+bool showMenu(SDL_Renderer* renderer, TTF_Font* font) {
+    // Pausar todos los sonidos en curso
+    SDL_PauseAudioDevice(deviceIdPaddle, 1);
+    SDL_PauseAudioDevice(deviceIdScore, 1);
+    SDL_PauseAudioDevice(deviceIdImpact, 1);
+
+    SDL_Event e;
+    bool selected = false;
+
+    // Definir las áreas de las opciones del menú
+    SDL_Rect option1Rect = {SCREEN_WIDTH / 4, SCREEN_HEIGHT / 3, 400, 30};
+    SDL_Rect option2Rect = {SCREEN_WIDTH / 4, SCREEN_HEIGHT / 3 + 40, 400, 30};
+    SDL_Rect option3Rect = {SCREEN_WIDTH / 4, SCREEN_HEIGHT / 3 + 80, 400, 30};
+    SDL_Rect option4Rect = {SCREEN_WIDTH / 4, SCREEN_HEIGHT / 3 + 120, 400, 30};
+
+    while (!selected) {
+        SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
+        SDL_RenderClear(renderer);
+
+        // Obtener la posición actual del mouse
+        int x, y;
+        SDL_GetMouseState(&x, &y);
+        SDL_Point mousePoint = {x, y};
+
+        // Comprobar si el mouse está sobre alguna opción y cambiar su color
+        SDL_Color option1Color = SDL_PointInRect(&mousePoint, &option1Rect) ? SDL_Color{255, 0, 0} : SDL_Color{255, 255, 255};
+        SDL_Color option2Color = SDL_PointInRect(&mousePoint, &option2Rect) ? SDL_Color{255, 0, 0} : SDL_Color{255, 255, 255};
+        SDL_Color option3Color = SDL_PointInRect(&mousePoint, &option3Rect) ? SDL_Color{255, 0, 0} : SDL_Color{255, 255, 255};
+        SDL_Color option4Color = SDL_PointInRect(&mousePoint, &option4Rect) ? SDL_Color{255, 0, 0} : SDL_Color{255, 255, 255};
+
+        // Renderizar las opciones con el color correspondiente
+        SDL_Color yellow = {255, 255, 0};  // Color amarillo
+        renderTextWithColor(renderer, font, "Bienvenido a Pong", SCREEN_WIDTH / 4, SCREEN_HEIGHT / 6, yellow);
+        renderTextWithColor(renderer, font, "1. Jugar contra otro jugador", option1Rect.x, option1Rect.y, option1Color);
+        renderTextWithColor(renderer, font, "2. Jugar contra la computadora", option2Rect.x, option2Rect.y, option2Color);
+        renderTextWithColor(renderer, font, "3. Instrucciones", option3Rect.x, option3Rect.y, option3Color);
+        renderTextWithColor(renderer, font, "4. Salir", option4Rect.x, option4Rect.y, option4Color);
+
+        SDL_RenderPresent(renderer);
+
+        while (SDL_PollEvent(&e) != 0) {
+            if (e.type == SDL_QUIT) {
+                return false;
+            }
+            if (e.type == SDL_MOUSEBUTTONDOWN) {
+                if (SDL_PointInRect(&mousePoint, &option1Rect)) {
+                    playAgainstAI = false;
+                    selected = true;
+                } else if (SDL_PointInRect(&mousePoint, &option2Rect)) {
+                    playAgainstAI = true;
+                    selected = showDifficultyMenu(renderer, font); // Mostrar submenú de dificultad
+                    // Ajustar la velocidad de la paleta según la dificultad seleccionada
+                    if (selected) {
+                        switch (dificultadSeleccionada) {
+                            case FACIL:
+                                paddleSpeed = 7;  // Velocidad baja para fácil
+                                break;
+                            case MEDIO:
+                                paddleSpeed = 8;  // Velocidad media para medio
+                                break;
+                            case DIFICIL:
+                                paddleSpeed = 8;  // Velocidad alta para difícil
+                                break;
+                        }
+                    }
+                } else if (SDL_PointInRect(&mousePoint, &option3Rect)) {
+                    showInstructions(renderer, font);
+                } else if (SDL_PointInRect(&mousePoint, &option4Rect)) {
+                    return false;
+                } else {
+                    SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
+                    SDL_RenderClear(renderer);
+                    renderText(renderer, font, "Opción incorrecta, intente de nuevo.", SCREEN_WIDTH / 4, SCREEN_HEIGHT / 2);
+                    SDL_RenderPresent(renderer);
+                }
+            }
+        }
+    }
+    return true;
+}
+
+
+// Función para renderizar texto con un color específico
+void renderTextWithColor(SDL_Renderer* renderer, TTF_Font* font, std::string text, int x, int y, SDL_Color color) {
+    SDL_Surface* surface = TTF_RenderText_Solid(font, text.c_str(), color);
+    SDL_Texture* texture = SDL_CreateTextureFromSurface(renderer, surface);
+
+    SDL_Rect destRect = {x, y, surface->w, surface->h};
+    SDL_RenderCopy(renderer, texture, NULL, &destRect);
+
+    SDL_FreeSurface(surface);
+    SDL_DestroyTexture(texture);
+}
+
 
 // Reiniciar variables
 void resetGame() {
@@ -294,7 +438,13 @@ void resetGame() {
     ballSpeedY = 6;
     score1 = 0;
     score2 = 0;
+
+    // Reiniciar los dispositivos de audio
+    SDL_ClearQueuedAudio(deviceIdPaddle);
+    SDL_ClearQueuedAudio(deviceIdScore);
+    SDL_ClearQueuedAudio(deviceIdImpact);
 }
+
 
 void showCountdown(SDL_Renderer* renderer, TTF_Font* font) {
     const int countdownTime = 1000; // 1000 ms = 1 segundo
@@ -307,71 +457,4 @@ void showCountdown(SDL_Renderer* renderer, TTF_Font* font) {
         SDL_RenderPresent(renderer);
         SDL_Delay(countdownTime);
     }
-}
-
-int main(int argc, char* args[]) {
-    SDL_Window* window = NULL;
-    SDL_Renderer* renderer = NULL;
-    TTF_Font* font = NULL;
-
-    if (!init(&window, &renderer, &font)) {
-        std::cout << "Fallo en la inicializaci�n." << std::endl;
-        return -1;
-    }
-
-    bool quit = false;
-    while (!quit) {
-        if (!showMenu(renderer, font)) {
-            break;
-        }
-
-        resetGame();
-        showCountdown(renderer, font);
-
-        bool gameRunning = true;
-
-        while (gameRunning) {
-            SDL_Event e;
-            while (SDL_PollEvent(&e) != 0) {
-                if (e.type == SDL_QUIT) {
-                    gameRunning = false;
-                    quit = true;
-                }
-            }
-
-            const Uint8* currentKeyStates = SDL_GetKeyboardState(NULL);
-            if (currentKeyStates[SDL_SCANCODE_W]) {
-                paddle1Y -= paddleSpeed;
-                if (paddle1Y < 0) paddle1Y = 0;
-            }
-            if (currentKeyStates[SDL_SCANCODE_S]) {
-                paddle1Y += paddleSpeed;
-                if (paddle1Y > SCREEN_HEIGHT - PADDLE_HEIGHT) paddle1Y = SCREEN_HEIGHT - PADDLE_HEIGHT;
-            }
-            if (!playAgainstAI) {
-                if (currentKeyStates[SDL_SCANCODE_UP]) {
-                    paddle2Y -= paddleSpeed;
-                    if (paddle2Y < 0) paddle2Y = 0;
-                }
-                if (currentKeyStates[SDL_SCANCODE_DOWN]) {
-                    paddle2Y += paddleSpeed;
-                    if (paddle2Y > SCREEN_HEIGHT - PADDLE_HEIGHT) paddle2Y = SCREEN_HEIGHT - PADDLE_HEIGHT;
-                }
-            } else {
-                updateAIPaddle();
-            }
-
-            updateBall();
-
-            if (checkWinCondition(renderer, font)) {
-                gameRunning = false;
-            }
-
-            render(renderer, font);
-            SDL_Delay(10);
-        }
-    }
-
-    close(window, renderer, font);
-    return 0;
 }
